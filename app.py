@@ -3,91 +3,16 @@
 #----------------------------------------------------------------------------#
 
 from datetime import datetime
-import json
 import dateutil.parser
 import babel
-from flask import Flask, render_template, request, Response, flash, redirect, url_for, abort
-from flask_moment import Moment
-from flask_sqlalchemy import SQLAlchemy
+from flask import render_template, request, flash, redirect, url_for, abort
 from sqlalchemy import func
-from sqlalchemy.dialects.postgresql import ARRAY
-from flask_migrate import Migrate
 import sys
 import logging
 from logging import Formatter, FileHandler
 from flask_wtf import Form
 from forms import *
-
-#----------------------------------------------------------------------------#
-# App Config.
-#----------------------------------------------------------------------------#
-
-app = Flask(__name__)
-moment = Moment(app)
-app.config.from_object('config')
-db = SQLAlchemy(app)
-
-# TODO: connect to a local postgresql database
-migrate = Migrate(app, db)
-
-#----------------------------------------------------------------------------#
-# Models.
-#----------------------------------------------------------------------------#
-
-# TODO: implement model/table for shows
-class Venue(db.Model):
-    __tablename__ = 'venue'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    address = db.Column(db.String(256))
-    phone = db.Column(db.String(120))
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
-
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
-    genres = db.Column(db.String(120))
-    website_link = db.Column(db.String(256))
-    seeking_talent = db.Column(db.Boolean, nullable=False, default=False)
-    seeking_description = db.Column(db.String(512))
-    shows = db.relationship('Show', backref="venue", lazy=True)
-
-    def __repr__(self):
-      return f'<Venue name={self.name}, city={self.city}, state={self.state}, address={self.address}, genres={self.genres}>'
-
-class Artist(db.Model):
-    __tablename__ = 'artist'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    genres = db.Column(db.String(120))
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
-
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
-    website_link = db.Column(db.String(256))
-    seeking_venue = db.Column(db.Boolean, nullable=False, default=False)
-    seeking_description = db.Column(db.String(512))
-    shows = db.relationship('Show', backref="artist", lazy=True)
-
-    def __repr__(self):
-      return f'<Artist name={self.name}, city={self.city}, state={self.state}, address={self.address}, genres={self.genres}>'
-
-class Show(db.Model):
-  __tablename__ = 'shows'
-
-  id = db.Column(db.Integer, primary_key=True)
-  artist_id = db.Column(db.Integer, db.ForeignKey('artist.id'), nullable=False)
-  venue_id = db.Column(db.Integer, db.ForeignKey('venue.id'), nullable=False)
-  start_time = db.Column(db.DateTime, nullable=False)
-
-  def __repr__(self):
-    return f'<Show artist_id={self.artist_id}, venue_id={self.venue_id}>'
+from models import *
 
 #----------------------------------------------------------------------------#
 # Filters.
@@ -244,8 +169,7 @@ def create_venue_submission():
       seeking_description = request.form['seeking_description']
     )
     
-    db.session.add(venueObj)
-    db.session.commit()
+    Venue.create(venueObj)
     flash('Venue ' + request.form['name'] + ' was successfully listed!')
   except:
     db.session.rollback()
@@ -260,8 +184,8 @@ def delete_venue(venue_id):
   # TODO: Complete this endpoint for taking a venue_id, and using
   # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
   try:
-    db.session.query(Venue).filter(Venue.id == venue_id).delete()
-    db.session.commit()
+    venue = Venue.query.filter(Venue.id == venue_id).all()
+    Venue.delete(venue)
     flash('Venue ' + venue_id + ' was successfully deleted from database.')
   except:
     db.session.rollback()
@@ -457,8 +381,7 @@ def create_artist_submission():
       seeking_description = request.form['seeking_description']
     )
     
-    db.session.add(artistObj)
-    db.session.commit()
+    Artist.create(artistObj)
     flash('Artist ' + request.form['name'] + ' was successfully listed!')
   except:
     db.session.rollback()
@@ -513,8 +436,7 @@ def create_show_submission():
       start_time = request.form['start_time']
     )
     
-    db.session.add(showObj)
-    db.session.commit()
+    Show.create(showObj)
     flash('Show was successfully listed!')
   except:
     db.session.rollback()
